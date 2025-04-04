@@ -4,48 +4,73 @@ import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { SmtpMessage } from "../smtp-message";
 
-export default async function Signup(props: {
-  searchParams: Promise<Message>;
-}) {
+export default async function SignUp(props: { searchParams: Promise<Message> }) {
   const searchParams = await props.searchParams;
-  if ("message" in searchParams) {
-    return (
-      <div className="w-full flex-1 flex items-center h-screen sm:max-w-md justify-center gap-2 p-4">
-        <FormMessage message={searchParams} />
-      </div>
-    );
-  }
-
   return (
-    <>
-      <form className="flex flex-col min-w-64 max-w-64 mx-auto">
-        <h1 className="text-2xl font-medium">Sign up</h1>
-        <p className="text-sm text text-foreground">
-          Already have an account?{" "}
-          <Link className="text-primary font-medium underline" href="/sign-in">
-            Sign in
-          </Link>
-        </p>
-        <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-          <Label htmlFor="email">Email</Label>
-          <Input name="email" placeholder="you@example.com" required />
-          <Label htmlFor="password">Password</Label>
-          <Input
-            type="password"
-            name="password"
-            placeholder="Your password"
-            minLength={6}
-            required
-          />
-          <SubmitButton formAction={signUpAction} pendingText="Signing up...">
-            Sign up
-          </SubmitButton>
-          <FormMessage message={searchParams} />
+    <div className="h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto">
+        <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-xl p-6">
+          <h1 className="text-2xl font-bold text-gray-800 mb-6">注册许愿池</h1>
+          
+          <form className="space-y-4">
+            <div>
+              <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                邮箱
+              </Label>
+              <Input
+                name="email"
+                placeholder="你的邮箱"
+                required
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                密码
+              </Label>
+              <Input
+                type="password"
+                name="password"
+                placeholder="设置密码"
+                required
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                确认密码
+              </Label>
+              <Input
+                type="password"
+                name="confirmPassword"
+                placeholder="再次输入密码"
+                required
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            
+            <SubmitButton 
+              pendingText="Signing Up..." 
+              formAction={signUpAction}
+              className="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              注册
+            </SubmitButton>
+            
+            <div className="text-sm text-gray-600 text-center">
+              已有账号?{' '}
+              <Link href="/sign-in" className="text-purple-600 font-medium underline">
+                登录
+              </Link>
+            </div>
+            
+            {/* <FormMessage message={searchParams} /> */}
+          </form>
         </div>
-      </form>
-      <SmtpMessage />
-    </>
+      </div>
+    </div>
   );
 }
