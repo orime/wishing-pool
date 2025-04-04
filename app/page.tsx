@@ -20,8 +20,8 @@ export default function Home() {
   const { user } = useUser();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState('');
-
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTodos = async () => {
@@ -40,9 +40,8 @@ export default function Home() {
       }
     };
     
-    fetchTodos(); // 无论是否登录都获取数据
+    fetchTodos();
 
-    // 设置realtime订阅
     const channel = supabase
       .channel('todos_changes')
       .on(
@@ -55,7 +54,20 @@ export default function Home() {
         (payload) => {
           switch (payload.eventType) {
             case 'INSERT':
-              // 获取新创建的todo的完整数据
+              setTodos(prev => {
+                if (prev.some(todo => todo.id === payload.new.id)) {
+                  return prev;
+                }
+                const tempTodo = {
+                  id: payload.new.id,
+                  text: payload.new.text,
+                  completed: payload.new.completed,
+                  user_id: payload.new.user_id,
+                  creator_email: user?.email
+                };
+                return [tempTodo, ...prev];
+              });
+              
               supabase
                 .from('todos_with_profiles')
                 .select('*')
@@ -63,7 +75,15 @@ export default function Home() {
                 .single()
                 .then(({ data }) => {
                   if (data) {
-                    setTodos(prev => [data, ...prev]);
+                    setTodos(prev => {
+                      const existingIndex = prev.findIndex(t => t.id === data.id);
+                      if (existingIndex >= 0) {
+                        const newTodos = [...prev];
+                        newTodos[existingIndex] = data;
+                        return newTodos;
+                      }
+                      return [data, ...prev];
+                    });
                   }
                 });
               break;
@@ -89,8 +109,9 @@ export default function Home() {
 
   const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTodo.trim() || !user) return;
+    if (!newTodo.trim() || !user || submitting) return;
     
+    setSubmitting(true);
     try {
       const { data, error } = await supabase
         .from('todos')
@@ -105,11 +126,12 @@ export default function Home() {
       if (error) throw error;
       
       if (data?.[0]) {
-        setTodos([data[0], ...todos]);
         setNewTodo('');
       }
     } catch (error) {
       console.error('Error adding todo:', error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -189,10 +211,19 @@ export default function Home() {
                 />
                 <button
                   type="submit"
-                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-1"
+                  disabled={submitting}
+                  className={`bg-purple-500 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-1 ${
+                    submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-600'
+                  }`}
                 >
-                  <Plus className="h-5 w-5" />
-                  添加
+                  {submitting ? (
+                    <span className="animate-spin">⏳</span>
+                  ) : (
+                    <>
+                      <Plus className="h-5 w-5" />
+                      添加
+                    </>
+                  )}
                 </button>
               </div>
             </form>
