@@ -53,7 +53,8 @@ export default function Home() {
         .insert([{ 
           text: newTodo.trim(), 
           completed: false,
-          user_id: user.id 
+          user_id: user.id,
+          profile_id: user.id,
         }])
         .select();
       
