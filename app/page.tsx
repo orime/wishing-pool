@@ -27,11 +27,11 @@ export default function Home() {
     const fetchTodos = async () => {
       setLoading(true);
       try {
-      const { data, error } = await supabase
-        .from('todos_with_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
+        const { data, error } = await supabase
+          .from('todos_with_profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
         if (!error) setTodos(data || []);
       } catch (error) {
         console.error('Error fetching todos:', error);
@@ -41,7 +41,51 @@ export default function Home() {
     };
     
     fetchTodos(); // 无论是否登录都获取数据
-  }, [user]);
+
+    // 设置realtime订阅
+    const channel = supabase
+      .channel('todos_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'todos'
+        },
+        (payload) => {
+          switch (payload.eventType) {
+            case 'INSERT':
+              // 获取新创建的todo的完整数据
+              supabase
+                .from('todos_with_profiles')
+                .select('*')
+                .eq('id', payload.new.id)
+                .single()
+                .then(({ data }) => {
+                  if (data) {
+                    setTodos(prev => [data, ...prev]);
+                  }
+                });
+              break;
+            case 'UPDATE':
+              setTodos(prev =>
+                prev.map(todo =>
+                  todo.id === payload.new.id ? { ...todo, ...payload.new } : todo
+                )
+              );
+              break;
+            case 'DELETE':
+              setTodos(prev => prev.filter(todo => todo.id !== payload.old.id));
+              break;
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, supabase]);
 
   const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
